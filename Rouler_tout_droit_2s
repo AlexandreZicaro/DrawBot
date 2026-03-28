@@ -1,0 +1,58 @@
+#include <Arduino.h>
+
+// Déclaration entrées
+#define LEDU1 25
+#define LEDU2 26
+
+#define ENABLE_D 23
+#define ENABLE_G 4
+
+//Pin des moteurs
+#define IN_1_D 19
+#define IN_2_D 18
+
+#define IN_1_G 17
+#define IN_2_G 16
+
+
+void stopperRobot() {
+  analogWrite(IN_1_D, 0);
+  analogWrite(IN_2_D, 0);
+  analogWrite(IN_1_G, 0);
+  analogWrite(IN_2_G, 0);
+  Serial.println("Moteurs stoppés.");
+}
+
+void roulerLentement(int vitesse) {
+  digitalWrite(ENABLE_D, HIGH); 
+  digitalWrite(ENABLE_G, HIGH); 
+
+  // Moteur Droit 
+  analogWrite(IN_1_D, vitesse);
+  analogWrite(IN_2_D, 0);
+
+  // Moteur Gauche 
+  analogWrite(IN_1_G, 0);
+  analogWrite(IN_2_G, vitesse);
+  Serial.println("Roulage");
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  // On déclare toutes les broches comme des sorties
+  pinMode(ENABLE_D, OUTPUT); pinMode(IN_1_D, OUTPUT); pinMode(IN_2_D, OUTPUT);
+  pinMode(ENABLE_G, OUTPUT); pinMode(IN_1_G, OUTPUT); pinMode(IN_2_G, OUTPUT);
+  pinMode(LEDU1, OUTPUT);
+
+  Serial.println("Mon robot roule");
+  delay(3000);
+
+  roulerLentement(150); // vitesse
+  delay(2000);          // 2s
+  
+  stopperRobot();
+}
+
+void loop() {
+}

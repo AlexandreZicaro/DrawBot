@@ -1,0 +1,85 @@
+#include <Arduino.h>
+
+// Déclaration entrées
+#define LEDU1 25
+#define LEDU2 26
+
+#define ENABLE_D 23
+#define ENABLE_G 4
+
+//Pin moteurs
+#define IN_1_D 19
+#define IN_2_D 18
+
+#define IN_1_G 17
+#define IN_2_G 16
+
+int VITESSE = 150;
+
+
+void stop() {
+  analogWrite(IN_1_D, 0);
+  analogWrite(IN_2_D, 0);
+  analogWrite(IN_1_G, 0);
+  analogWrite(IN_2_G, 0);
+  Serial.println("Moteurs stoppés.");
+  digitalWrite(ENABLE_D, LOW);
+  digitalWrite(ENABLE_G, LOW);
+}
+
+void Avancer(){
+  digitalWrite(ENABLE_D, HIGH);
+  digitalWrite(ENABLE_G, HIGH);
+  Serial.println("On avance");
+
+  // Moteur d
+  analogWrite(IN_1_D, 0);
+  analogWrite(IN_2_D, VITESSE); 
+
+  // Moteur g
+  analogWrite(IN_1_G, VITESSE); 
+  analogWrite(IN_2_G, 0);
+}
+
+void Reculer(){
+  digitalWrite(ENABLE_D, HIGH);
+  digitalWrite(ENABLE_G, HIGH);
+  Serial.println("On recule");
+
+  // Moteur d
+  analogWrite(IN_1_D, VITESSE);
+  analogWrite(IN_2_D, 0);
+
+  // Moteur g
+  analogWrite(IN_1_G, 0);
+  analogWrite(IN_2_G, VITESSE);
+}
+void setup() {
+  Serial.begin(115200);
+  
+  // on déclare les broches comme des sorties
+  pinMode(ENABLE_D, OUTPUT); pinMode(IN_1_D, OUTPUT); pinMode(IN_2_D, OUTPUT);
+  pinMode(ENABLE_G, OUTPUT); pinMode(IN_1_G, OUTPUT); pinMode(IN_2_G, OUTPUT);
+  pinMode(LEDU1, OUTPUT);
+
+  
+
+
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    char touche = Serial.read(); // On lit le caractère
+    int vitesse
+
+    if (touche == 'k') {
+      Avancer();
+    } 
+    else if (touche == 'l') {
+      Reculer();
+    } 
+    else if (touche == 'm') {
+      stop();
+    }
+  }
+}

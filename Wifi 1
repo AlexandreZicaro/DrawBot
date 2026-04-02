@@ -1,0 +1,119 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include <WebServer.h>
+
+// --- Pins (identiques à avant) ---
+#define LEDU1 25
+#define LEDU2 26
+#define ENABLE_D 23
+#define ENABLE_G 4
+#define IN_1_D 19
+#define IN_2_D 18
+#define IN_1_G 17
+#define IN_2_G 16
+
+int VITESSE = 150;
+
+// --- WiFi en mode Access Point ---
+const char* ssid     = "RobotESP32";
+const char* password = "12345678";   // min 8 caractères
+
+WebServer server(80);
+
+// --- Tes fonctions moteurs (inchangées) ---
+void stopMoteurs() {
+  analogWrite(IN_1_D, 0); analogWrite(IN_2_D, 0);
+  analogWrite(IN_1_G, 0); analogWrite(IN_2_G, 0);
+  digitalWrite(ENABLE_D, LOW);
+  digitalWrite(ENABLE_G, LOW);
+}
+
+void Avancer() {
+  digitalWrite(ENABLE_D, HIGH); digitalWrite(ENABLE_G, HIGH);
+  analogWrite(IN_1_D, 0);      analogWrite(IN_2_D, VITESSE);
+  analogWrite(IN_1_G, VITESSE); analogWrite(IN_2_G, 0);
+}
+
+void Reculer() {
+  digitalWrite(ENABLE_D, HIGH); digitalWrite(ENABLE_G, HIGH);
+  analogWrite(IN_1_D, VITESSE); analogWrite(IN_2_D, 0);
+  analogWrite(IN_1_G, 0);      analogWrite(IN_2_G, VITESSE);
+}
+
+// --- Page HTML servie à l'adresse racine ---
+const char PAGE_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robot</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2rem; background: #f5f5f5; }
+    h2 { margin-bottom: 2rem; }
+    button {
+      width: 120px; height: 60px; font-size: 1.1rem;
+      margin: 8px; border: none; border-radius: 10px;
+      cursor: pointer; color: white;
+    }
+    .btn-go   { background: #2a7d4f; }
+    .btn-back { background: #4a6fa5; }
+    .btn-stop { background: #c0392b; }
+    button:active { opacity: 0.75; }
+    #status { margin-top: 1.5rem; color: #555; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h2>Controle Robot</h2>
+  <div>
+    <button class="btn-go"   onclick="cmd('/avancer')">⬆ Avancer</button>
+  </div>
+  <div>
+    <button class="btn-back" onclick="cmd('/reculer')">⬇ Reculer</button>
+    <button class="btn-stop" onclick="cmd('/stop')">■ Stop</button>
+  </div>
+  <p id="status">Prêt</p>
+  <script>
+    function cmd(route) {
+      fetch(route)
+        .then(r => r.text())
+        .then(t => document.getElementById('status').innerText = t)
+        .catch(() => document.getElementById('status').innerText = 'Erreur réseau');
+    }
+  </script>
+</body>
+</html>
+)rawliteral";
+
+// --- Handlers des routes ---
+void handleRoot()    { server.send(200, "text/html", PAGE_HTML); }
+
+void handleAvancer() { Avancer();      server.send(200, "text/plain", "Avance !"); }
+void handleReculer() { Reculer();      server.send(200, "text/plain", "Recule !"); }
+void handleStop()    { stopMoteurs();  server.send(200, "text/plain", "Stoppe."); }
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(ENABLE_D, OUTPUT); pinMode(IN_1_D, OUTPUT); pinMode(IN_2_D, OUTPUT);
+  pinMode(ENABLE_G, OUTPUT); pinMode(IN_1_G, OUTPUT); pinMode(IN_2_G, OUTPUT);
+  pinMode(LEDU1, OUTPUT);
+
+  // Démarrage Access Point
+  WiFi.softAP(ssid, password);
+  Serial.print("AP démarré. IP : ");
+  Serial.println(WiFi.softAPIP());   // Affiche 192.168.4.1
+
+  // Définition des routes
+  server.on("/",        handleRoot);
+  server.on("/avancer", handleAvancer);
+  server.on("/reculer", handleReculer);
+  server.on("/stop",    handleStop);
+
+  server.begin();
+  Serial.println("Serveur HTTP démarré !");
+}
+
+void loop() {
+  server.handleClient();   // Traite les requêtes entrantes
+}

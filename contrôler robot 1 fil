@@ -70,7 +70,7 @@ void setup() {
 void loop() {
   if (Serial.available() > 0) {
     char touche = Serial.read(); // On lit le caractère
-    int vitesse
+    int vitesse;
 
     if (touche == 'k') {
       Avancer();

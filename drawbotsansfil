@@ -1,0 +1,228 @@
+#include <Arduino.h>
+
+// Déclaration entrées
+#define LEDU1 25
+#define LEDU2 26
+
+#define ENABLE_D 23
+#define ENABLE_G 4
+
+//Pin moteurs
+#define IN_1_D 19
+#define IN_2_D 18
+
+#define IN_1_G 17
+#define IN_2_G 16
+
+int VITESSE = 150;
+const float COEFF_DEG_MS = 35.0;
+//////////////////////////////////////////////////////////////////////////
+
+
+
+void stop() {
+  analogWrite(IN_1_D, 0);
+  analogWrite(IN_2_D, 0);
+  analogWrite(IN_1_G, 0);
+  analogWrite(IN_2_G, 0);
+  Serial.println("Moteurs stoppés.");
+  digitalWrite(ENABLE_D, LOW);
+  digitalWrite(ENABLE_G, LOW);
+}
+
+
+
+
+void Avancer(){
+  digitalWrite(ENABLE_D, HIGH);
+  digitalWrite(ENABLE_G, HIGH);
+  Serial.println("On avance");
+
+  // Moteur d
+  analogWrite(IN_1_D, 0);
+  analogWrite(IN_2_D, VITESSE); 
+
+  // Moteur g
+  analogWrite(IN_1_G, VITESSE); 
+  analogWrite(IN_2_G, 0);
+}
+
+
+
+
+void Reculer(){
+  digitalWrite(ENABLE_D, HIGH);
+  digitalWrite(ENABLE_G, HIGH);
+  Serial.println("On recule");
+
+  // Moteur d
+  analogWrite(IN_1_D, VITESSE);
+  analogWrite(IN_2_D, 0);
+
+  // Moteur g
+  analogWrite(IN_1_G, 0);
+  analogWrite(IN_2_G, VITESSE);
+}
+
+
+
+
+
+
+void tourner_roue_gauche(float angle) {
+   
+  digitalWrite(ENABLE_G, HIGH);
+  digitalWrite(ENABLE_D, LOW);
+
+  
+
+
+}
+
+
+
+
+
+
+
+void tourner_roue_droite(float angle) {
+
+  Serial.print("Pivot avec roue droite pour un angle de : ");
+  Serial.println(angle);
+
+  // Calcul du temps nécessaire (en ms)
+  int temps_action = angle;
+
+  // On active uniquement le driver Droit
+  digitalWrite(ENABLE_D, HIGH); 
+  digitalWrite(ENABLE_G, LOW);  // Roue gauche bloquée/libre
+
+  // La roue droite avance
+  analogWrite(IN_1_D, 0);       // Attention, IN1 à 0 et IN2 à VITESSE (comme dans ton code précédent)
+  analogWrite(IN_2_D, VITESSE); 
+
+  // On laisse le moteur tourner le temps calculé
+  delay(temps_action);
+
+  // On stoppe tout
+  stop();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+void tourner_a_gauche(){
+
+
+  stop();
+
+  for (int i = 300; i > 50; i -= 50) {
+
+  digitalWrite(ENABLE_D, HIGH);
+  digitalWrite(ENABLE_G, LOW);
+
+  analogWrite(IN_1_D, VITESSE);
+  analogWrite(IN_2_D, 0);
+
+  delay(300);
+  stop();
+
+  digitalWrite(ENABLE_D, LOW);
+  digitalWrite(ENABLE_G, HIGH);
+
+
+  analogWrite(IN_1_G, VITESSE);
+  analogWrite(IN_2_G, 0);
+
+  delay(300);
+  }
+
+  
+}
+
+void tourner_a_droite() {
+  stop();
+
+  // Angles dégressifs : grands pas au début, petits à la fin
+  // Total visé ≈ 90° de rotation du robot
+  int angles[] = {60, 50, 40, 30, 20, 15, 10, 8, 5};
+  int nb_etapes = sizeof(angles) / sizeof(angles[0]);
+
+  for (int i = 0; i < nb_etapes; i++) {
+    float angle = angles[i];
+
+    // 1. Roue DROITE recule → le robot pivote vers la droite
+    digitalWrite(ENABLE_D, HIGH);
+    digitalWrite(ENABLE_G, LOW);
+    analogWrite(IN_1_D, VITESSE);   // reculer = IN1 HIGH, IN2 LOW
+    analogWrite(IN_2_D, 0);
+    delay((int)(angle * COEFF_DEG_MS));
+    stop();
+
+    delay(10); // petite pause entre les deux demi-arcs
+
+    // 2. Roue GAUCHE avance → renforce le pivot vers la droite
+    digitalWrite(ENABLE_D, LOW);
+    digitalWrite(ENABLE_G, HIGH);
+    analogWrite(IN_1_G, VITESSE);   // avancer = IN1 HIGH, IN2 LOW
+    analogWrite(IN_2_G, 0);
+    delay((int)(angle * COEFF_DEG_MS));
+    stop();
+
+    delay(10);
+  }
+}
+
+void Sequence_1(){
+
+  tourner_a_droite;
+
+}
+
+
+
+
+
+////////////////////////////////////////////////////////////////////
+void setup() {
+  Serial.begin(115200);
+  
+  // on déclare les broches comme des sorties
+  pinMode(ENABLE_D, OUTPUT); pinMode(IN_1_D, OUTPUT); pinMode(IN_2_D, OUTPUT);
+  pinMode(ENABLE_G, OUTPUT); pinMode(IN_1_G, OUTPUT); pinMode(IN_2_G, OUTPUT);
+  pinMode(LEDU1, OUTPUT);
+
+}
+//////////////////////////////////////////////////////////////////////////
+
+
+void loop() {
+  if (Serial.available() > 0) {
+    char touche = Serial.read(); // On lit le caractère
+    int vitesse;
+
+    if (touche == 'k') {
+      Avancer();
+    } 
+    else if (touche == 'l') {
+      Reculer();
+    } 
+    else if (touche == 'm') {
+      stop();
+    }
+    else if (touche == 'a') {
+      
+      Sequence_1();
+      
+    }
+  }
+}
